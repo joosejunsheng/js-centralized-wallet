@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: js-centralized-wallet_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+    container_name: js-centralized-wallet
+    depends_on:
+      - db
+    environment:
+      LISTEN_ADDR: :8080
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_HOST: db
+      POSTGRES_DB: mydb
+    ports:
+      - "8080:8080"
+    command: ["/cmd/serve/js-centralized-wallet"]
+
+
+volumes:
+  pg_data:
