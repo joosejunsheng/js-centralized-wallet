@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"js-centralized-wallet/pkg/model"
 	"js-centralized-wallet/pkg/trace"
-	"js-centralized-wallet/pkg/utils"
+	"js-centralized-wallet/pkg/utils/middlewares"
 	"net"
 	"net/http"
 	"os"
@@ -28,10 +28,10 @@ func (s *Server) Run() error {
 		return fmt.Errorf("failed to listen: %w", err)
 	}
 
-	return http.Serve(l, utils.ComposeMiddlewares(
-		utils.AccessLog,
-		utils.AllowAllOrigins,
-		utils.ComposeMiddlewares(utils.GzipMiddleware, s.apiRoutes),
+	return http.Serve(l, middlewares.ComposeMiddlewares(
+		middlewares.AccessLog,
+		middlewares.AllowAllOrigins,
+		middlewares.ComposeMiddlewares(middlewares.GzipMiddleware, s.apiRoutes),
 	)(http.NewServeMux().ServeHTTP))
 }
 

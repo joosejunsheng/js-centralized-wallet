@@ -1,21 +1,46 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"js-centralized-wallet/internal/constants"
 	"log/slog"
 
+	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
+func (m *Model) connectRedis() error {
+
+	options := &redis.Options{
+		Addr: fmt.Sprintf("%s:%s", constants.REDIS_HOST, constants.REDIS_PORT),
+		DB:   0,
+	}
+
+	client := redis.NewClient(options)
+
+	ctx := context.Background()
+	_, err := client.Ping(ctx).Result()
+	if err != nil {
+		return fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+
+	m.redis = client
+
+	slog.Info("connected to Redis")
+
+	return nil
+}
+
 func (m *Model) connectDB() error {
 	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s/postgres?sslmode=disable",
+		"postgres://%s:%s@%s/%s?sslmode=disable",
 		constants.POSTGRES_USER,
 		constants.POSTGRES_PASSWORD,
 		constants.POSTGRES_HOST,
+		constants.POSTGRES_DB,
 	)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
@@ -70,30 +95,14 @@ func (m *Model) seed() error {
 	m.db.Model(&Wallet{}).Count(&walletCount)
 	if walletCount == 0 {
 		wallets := []Wallet{
-			{UserId: 1, Balance: 50.00},
-			{UserId: 2, Balance: 270.00},
+			{UserId: 1, Balance: 100000},
+			{UserId: 2, Balance: 100000},
 		}
 
 		if err := m.db.Create(&wallets).Error; err != nil {
 			return fmt.Errorf("failed to seed wallets: %w", err)
 		}
 		slog.Info("Wallets seeded successfully")
-	}
-
-	var transactionCount int64
-	m.db.Model(&Transaction{}).Count(&transactionCount)
-	if transactionCount == 0 {
-		transactions := []Transaction{
-			{UserId: 1, WalletId: 1, Amount: 100.00},
-			{UserId: 1, WalletId: 1, Amount: -50.00},
-			{UserId: 2, WalletId: 2, Amount: 200.00},
-			{UserId: 2, WalletId: 2, Amount: 75.00},
-		}
-
-		if err := m.db.Create(&transactions).Error; err != nil {
-			return fmt.Errorf("failed to seed transactions: %w", err)
-		}
-		slog.Info("Transactions seeded successfully")
 	}
 
 	slog.Info("Database seeding completed")

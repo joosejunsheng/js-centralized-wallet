@@ -3,7 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres:latest
-    container_name: js-centralized-wallet_postgres
+    container_name: js-centralized-wallet-postgres
     restart: always
     environment:
       POSTGRES_USER: admin
@@ -16,19 +16,29 @@ services:
 
   api:
     build: .
-    container_name: js-centralized-wallet
+    container_name: js-centralized-wallet-1
     depends_on:
       - db
+      - redis
     environment:
       LISTEN_ADDR: :8080
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: 123456
       POSTGRES_HOST: db
       POSTGRES_DB: mydb
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     ports:
       - "8080:8080"
+    entrypoint: ["/entrypoint.sh"]
     command: ["/cmd/serve/js-centralized-wallet"]
 
+  redis:
+    image: redis:latest
+    container_name: js-centralized-wallet-redis
+    restart: always
+    ports:
+      - "6379:6379"
 
 volumes:
   pg_data:

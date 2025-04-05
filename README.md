@@ -15,13 +15,25 @@ Use gzip for compressed response, speed up response
 
 a
 # TODO:
-# 1. Create Migration
+# 1. add indexing 
 
 # TODO:
 # 1. trace
 
 Build Command
 docker-compose up --build -d
+docker volume prune -a
+docker image prune -a
+
+
+snowflake id for transaction uuid
+
+add indexing DestWalletId in Transaction for better history query
+
+uses int64 for cents
+
+throttling (currently using window sliding, better to use token bucket, or window sliding comparing last and first time, more flexible)
+redis for distributed locking, multiple api instance checking same redis
 
 
 

@@ -21,6 +21,8 @@ func newClientError(code string) error {
 
 var (
 	ErrBadInput            = newClientError("bad_input")
+	ErrInvalidAmount       = newClientError("invalid_amount")
 	ErrUnauthorized        = newClientError("unauthorized")
 	ErrBalanceInsufficient = newClientError("balance_insufficient")
+	ErrSelfTransferInvalid = newClientError("self_transfer_invalid")
 )
