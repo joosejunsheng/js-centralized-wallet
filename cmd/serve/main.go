@@ -23,6 +23,12 @@ func main() {
 	}
 	server := server.NewServer(model)
 
+	err = server.StartScheduler()
+	if err != nil {
+		slog.Error("failed to start schedule", "err", err)
+		os.Exit(1)
+	}
+
 	err = server.Run()
 	if err != nil {
 		slog.Error("failed to run server", "err", err)

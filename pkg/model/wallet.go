@@ -16,10 +16,10 @@ func (*Wallet) TableName() string {
 	return "wallets"
 }
 
-func (m *Model) GetWalletBalance(ctx context.Context, userId uint64) (float64, error) {
+func (m *Model) GetWalletBalance(ctx context.Context, userId uint64) (int64, error) {
 	ctx, lg := trace.Logger(ctx)
 
-	var balance float64
+	var balance int64
 
 	if err := m.db.WithContext(ctx).
 		Model(&Wallet{}).
@@ -29,7 +29,7 @@ func (m *Model) GetWalletBalance(ctx context.Context, userId uint64) (float64, e
 		return 0, fmt.Errorf("failed to get wallet balance: %w", err)
 	}
 
-	lg.Info(fmt.Sprintf("retrieved wallet balance for user = %d: $%.2f", userId, balance))
+	lg.Info(fmt.Sprintf("retrieved wallet balance for user = %d: $%d", userId, balance))
 
 	return balance, nil
 }

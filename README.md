@@ -25,6 +25,7 @@ docker-compose up --build -d
 docker volume prune -a
 docker image prune -a
 
+Added multiple workers for v2
 
 snowflake id for transaction uuid
 
@@ -35,5 +36,4 @@ uses int64 for cents
 throttling (currently using window sliding, better to use token bucket, or window sliding comparing last and first time, more flexible)
 redis for distributed locking, multiple api instance checking same redis
 
-
-
+grpc to wallet service

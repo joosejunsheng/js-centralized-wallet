@@ -95,8 +95,8 @@ func (m *Model) seed() error {
 	m.db.Model(&Wallet{}).Count(&walletCount)
 	if walletCount == 0 {
 		wallets := []Wallet{
-			{UserId: 1, Balance: 100000},
-			{UserId: 2, Balance: 100000},
+			{UserId: 1, Balance: 1_000_000_000_000},
+			{UserId: 2, Balance: 1_000_000_000_000},
 		}
 
 		if err := m.db.Create(&wallets).Error; err != nil {

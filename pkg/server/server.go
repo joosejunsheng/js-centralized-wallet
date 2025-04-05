@@ -13,12 +13,22 @@ import (
 )
 
 type Server struct {
-	model *model.Model
+	model   *model.Model
+	jobChan chan model.TransferJob
 }
 
 func NewServer(m *model.Model) *Server {
+	jobChan := make(chan model.TransferJob, 100)
+
+	transferPool := model.NewTransferWorkerPool(m, jobChan,
+		model.WithNumWorkers(10),
+	)
+
+	transferPool.Start()
+
 	return &Server{
-		model: m,
+		model:   m,
+		jobChan: jobChan,
 	}
 }
 

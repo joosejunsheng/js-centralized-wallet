@@ -223,7 +223,7 @@ func (m *Model) TransferBalance(ctx context.Context, sourceUserId, destUserId ui
 }
 
 // Always row lock smaller userId first to prevent deadlock
-// Uses "SHARE" lock instead of "UPDATE" lock so users can still view their balance when others transfer to them
+// Uses "UPDATE" lock instead of "SHARE" lock, stricter
 func LockWalletsBalanceByUserId(c context.Context, sourceUserId, destUserId uint64, tx *gorm.DB) (Wallet, Wallet, error) {
 	var sourceWallet, destWallet Wallet
 	if sourceUserId < destUserId {

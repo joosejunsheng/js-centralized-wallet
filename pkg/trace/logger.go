@@ -22,14 +22,6 @@ type trace struct {
 	path string
 }
 
-func WithLogger(ctx context.Context, logger *slog.Logger) context.Context {
-	if logger == nil {
-		logger = slog.Default()
-	}
-
-	return context.WithValue(ctx, keyTrace, trace{l: logger})
-}
-
 func Logger(ctx context.Context) (context.Context, *slog.Logger) {
 	t, ok := ctx.Value(keyTrace).(trace)
 	if !ok {

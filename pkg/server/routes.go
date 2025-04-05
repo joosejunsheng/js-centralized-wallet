@@ -18,7 +18,11 @@ func (s *Server) apiRoutes(next http.HandlerFunc) http.HandlerFunc {
 		r.HandleFunc("GET /api/transactions/v1", middlewares.AuthMiddleware(s.getTransactionHistory))
 		r.HandleFunc("POST /api/deposit/v1", middlewares.AuthMiddleware(s.deposit))
 		r.HandleFunc("POST /api/withdraw/v1", middlewares.AuthMiddleware(s.withdraw))
+
 		r.HandleFunc("POST /api/transfer/v1", middlewares.ThrottleMiddleware(s.model.GetRedis(), middlewares.AuthMiddleware(s.transferBalance)))
+
+		// No throttle for testing
+		r.HandleFunc("POST /api/transfer/v2", middlewares.AuthMiddleware(s.transferBalanceV2))
 	}
 
 	return r.ServeHTTP
