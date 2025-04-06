@@ -3,6 +3,14 @@
 
 # Wallet API Documentation
 
+### 🚀 Build and Run
+
+To build the project and spin up **3 services (Redis, API, and Postgres)** in detached mode, run:
+
+```bash
+docker-compose up --build -d
+```
+
 ## 📌 Notes
 
 - All API requests **require a `UserId` in the `Authorization` header**. (This is a simplified replacement for Auth Token)
