@@ -43,10 +43,10 @@ func (p *TransferWorkerPool) Start() {
 
 	_, lg := trace.Logger(context.Background())
 
-	for i := 0; i < p.numWorkers; i++ {
+	for i := range p.numWorkers {
 		go func(id int) {
 			for job := range p.jobChan {
-				err := p.model.TransferBalanceV2(job.Ctx, job.SourceUserId, job.DestUserId, job.Amount)
+				err := p.model.TransferBalance(job.Ctx, job.SourceUserId, job.DestUserId, job.Amount)
 				if err != nil {
 					// TODO:
 					// 1) Add retry mechanism in the future
@@ -54,6 +54,7 @@ func (p *TransferWorkerPool) Start() {
 					// 2) Push into persistent storage to notify users
 					lg.Info(fmt.Sprintf("[worker %d] transfer failed - FROM USER %d TO USER %d, AMOUNT %d ERR: %v", id, job.SourceUserId, job.DestUserId, job.Amount, err))
 				} else {
+					p.model.InvalidateWalletCache(job.Ctx, job.SourceUserId, job.DestUserId)
 					lg.Info(fmt.Sprintf("[worker %d] transfer success - FROM USER %d TO USER %d, AMOUNT %d", id, job.SourceUserId, job.DestUserId, job.Amount))
 				}
 			}

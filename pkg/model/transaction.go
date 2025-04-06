@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"js-centralized-wallet/pkg/trace"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -80,7 +81,7 @@ func (m *Model) GetTransactionHistory(ctx context.Context, userId uint64, transc
 	}
 
 	offset := (pageInfo.Page - 1) * pageInfo.PageSize
-	query = query.Offset(offset).Limit(pageInfo.PageSize)
+	query = query.Offset(offset).Limit(pageInfo.PageSize).Order("created_at desc")
 
 	if err = query.Find(&transactions).Error; err != nil {
 		return transactions, err
@@ -171,6 +172,8 @@ func (m *Model) TransferBalance(ctx context.Context, sourceUserId, destUserId ui
 
 	lg.Info(fmt.Sprintf("Starts transferring $%d from user_id %d to user_id %d", amount, sourceUserId, destUserId))
 
+	// Simulate slow process / delay
+	time.Sleep(2 * time.Second)
 	err := m.db.Transaction(func(tx *gorm.DB) error {
 
 		// Lock wallets
@@ -179,6 +182,13 @@ func (m *Model) TransferBalance(ctx context.Context, sourceUserId, destUserId ui
 			return err
 		}
 		if sourceWallet.Balance < amount {
+
+			// V2 TO TAKE NOTE
+			// Might have issue even though checked before pushing into channel
+			// TODO:
+			// 1) Add retry mechanism in the future
+			// OR
+			// 2) Push into persistent storage to notify users
 			return ErrBalanceInsufficient
 		}
 		sourceWallet.Balance -= amount

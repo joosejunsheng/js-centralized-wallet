@@ -52,7 +52,7 @@ func (s *Server) transferBalanceV2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.jobChan <- model.TransferJob{
-		Ctx:          transferBalanceCtx,
+		Ctx:          context.Background(),
 		SourceUserId: userId,
 		DestUserId:   req.DestinationUserId,
 		Amount:       req.Amount,
