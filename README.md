@@ -1,10 +1,146 @@
 
+---
 
-# User can deposit money into his/her wallet
-# User can withdraw money from his/her wallet
-# User can send money to another user
-# User can check his/her wallet balance
-# User can view his/her transaction history
+# Wallet API Documentation
+
+## 📌 Notes
+
+- All API requests **require a `UserId` in the `Authorization` header**. (This is a simplified replacement for Auth Token)
+- All `amount` and `balance` values are represented in **cents**.  
+  For example: `$11.70` is shown as `1170` (data type: `int64`)
+
+---
+
+## 🚀 API Endpoints
+
+### 💰 Deposit Money
+
+**Endpoint:**  
+`POST http://localhost:8080/api/deposit/v1`
+
+**Headers:**
+```
+Authorization: 1  // UserId
+```
+
+**Request Body:**
+```json
+{
+  "amount": 67
+}
+```
+
+**Response:**
+```json
+{
+  "balance": 167
+}
+```
+
+---
+
+### 🏧 Withdraw Money
+
+**Endpoint:**  
+`POST http://localhost:8080/api/withdraw/v1`
+
+**Headers:**
+```
+Authorization: 1  // UserId
+```
+
+**Request Body:**
+```json
+{
+  "amount": 67
+}
+```
+
+**Response:**
+```json
+{
+  "balance": 33
+}
+```
+
+---
+
+### 🔁 Transfer Money to Another User
+
+**Endpoint:**  
+`POST http://localhost:8080/api/transfer/v2`
+
+**Headers:**
+```
+Authorization: 1  // UserId
+```
+
+**Request Body:**
+```json
+{
+  "destination_user_id": 2,
+  "amount": 1003
+}
+```
+
+**Response:**
+```json
+{
+  "success": true
+}
+```
+
+---
+
+### 📊 Check Wallet Balance
+
+**Endpoint:**  
+`GET http://localhost:8080/api/wallet/balance/v1`
+
+**Headers:**
+```
+Authorization: 1  // UserId
+```
+
+**Response:**
+```json
+{
+  "balance": 10000
+}
+```
+
+---
+
+### 📜 View Transaction History
+
+**Endpoint:**  
+`GET http://localhost:8080/api/transactions/v1`
+
+**Headers:**
+```
+Authorization: 2  // UserId
+```
+
+**Query Parameters:**
+- `type` (optional): `0 = All`, `1 = Deposit`, `2 = Withdraw`, `3 = Transfer` (default = `0`)
+- `page` (default = `1`)
+- `page_size` (default = `30`)
+
+**Example Request:**
+```
+GET http://localhost:8080/api/transactions/v1?type=1&page=1&page_size=30
+```
+
+**Response:**
+```json
+{
+  "balance": 10000
+}
+```
+
+---
+
+Let me know if you want to add OpenAPI (Swagger) support or diagrams for flow!
 
 # Explain Decisions Made
 # Installation
