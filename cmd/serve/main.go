@@ -23,6 +23,7 @@ func main() {
 	}
 	server := server.NewServer(model)
 
+	// To run sync wallet snapshot everyday to make sure wallet balance is correct based on the transaction logs
 	err = server.StartScheduler()
 	if err != nil {
 		slog.Error("failed to start schedule", "err", err)

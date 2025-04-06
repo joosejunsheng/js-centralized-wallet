@@ -14,7 +14,7 @@ func (s *Server) StartScheduler() error {
 	_, lg := trace.Logger(context.Background())
 
 	// Run at every minute
-	_, err := c.AddFunc("* * * * *", func() {
+	_, err := c.AddFunc("0 0 * * *", func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 
