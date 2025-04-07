@@ -230,20 +230,20 @@ func (m *Model) TransferBalance(ctx context.Context, sourceUserId, destUserId ui
 func LockWalletsBalanceByUserId(c context.Context, sourceUserId, destUserId uint64, tx *gorm.DB) (Wallet, Wallet, error) {
 	var sourceWallet, destWallet Wallet
 	if sourceUserId < destUserId {
-		err := tx.Clauses(clause.Locking{Strength: "SHARE"}).Where("user_id", sourceUserId).First(&sourceWallet).Error
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id", sourceUserId).First(&sourceWallet).Error
 		if err != nil {
 			return sourceWallet, destWallet, err
 		}
-		err = tx.Clauses(clause.Locking{Strength: "SHARE"}).Where("user_id", destUserId).First(&destWallet).Error
+		err = tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id", destUserId).First(&destWallet).Error
 		if err != nil {
 			return sourceWallet, destWallet, err
 		}
 	} else {
-		err := tx.Clauses(clause.Locking{Strength: "SHARE"}).Where("user_id", destUserId).First(&destWallet).Error
+		err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id", destUserId).First(&destWallet).Error
 		if err != nil {
 			return sourceWallet, destWallet, err
 		}
-		err = tx.Clauses(clause.Locking{Strength: "SHARE"}).Where("user_id", sourceUserId).First(&sourceWallet).Error
+		err = tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("user_id", sourceUserId).First(&sourceWallet).Error
 		if err != nil {
 			return sourceWallet, destWallet, err
 		}

@@ -181,12 +181,16 @@ Here’s how you can write this into the README for better understanding:
 
 # Highlight how should reviewer view your code
 
-## 1. Custom Middleware Implementation
+## 1. Deadlock Prevention
+https://github.com/joosejunsheng/js-centralized-wallet/blob/c555ba9eaaff8a8489c517c6407d06987504df31/pkg/model/transaction.go#L230
+- **Prevention of Deadlock**: It compares the `sourceUserId` and `destUserId` to ensure that the smaller user ID is locked first. This is a common practice to avoid circular locking, which can lead to deadlock situations.
+
+## 2. Custom Middleware Implementation
 https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/server/server.go#L36
 - **Listen then Serve**: Instead of the standard `http.ListenAndServe`, custom middleware is used to intercept requests before serving. This approach gives more flexibility and control over request handling.
 - **Middleware**: Custom middleware is implemented to handle cross-cutting concerns like logging, authentication, and throttling.
   
-## 2. Context-based Logging
+## 3. Context-based Logging
 https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/trace/logger.go#L25
 - **Trace Logger**: Whenever logging is used, the context (`ctx`) is passed along with the log. This enables the generation of a unique trace path for each request, which is useful for tracing the execution flow across different microservices or components. The logger can be accessed using:
   
@@ -194,32 +198,32 @@ https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3
   ctx, lg := trace.Logger(ctx)
   ```
 
-## 3. Gzip Compression
+## 4. Gzip Compression
 https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/utils/middlewares/gzip.go#L18
 - **Gzip for Response Compression**: To speed up response times and reduce bandwidth, gzip compression is enabled for responses. This reduces the payload size and improves performance, especially for large data sets.
 
-## 4. Transaction History Optimization
+## 5. Transaction History Optimization
 - **Indexing**: The `DestWalletId` in the `Transaction` table is indexed to enhance the efficiency of querying wallet history. This improves the speed of transaction history lookups, especially when querying large volumes of transactions.
 
-## 5. Improved Currency Handling
+## 6. Improved Currency Handling
 - **Using int64 for Cents**: Instead of using `float64`, `int64` is used for storing currency values in cents. This avoids rounding errors and provides more precise calculations, especially when dealing with large numbers of transactions.
 
-## 6. Throttling
+## 7. Throttling
 https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/utils/middlewares/throttle.go#L12
 - **Throttling Mechanism**: The system currently uses a sliding window for rate-limiting, but plans to migrate to a **Token Bucket** algorithm for better flexibility. This change will allow more dynamic and fine-grained control over request rates.
 - **Improved Throttling**: Future updates for current sliding window technique will compare the time between the last and first requests to better manage rate limiting and prevent overloads.
 
-## 7. Distributed Locking with Redis
+## 8. Distributed Locking with Redis
 - **Redis for Distributed Locking**: In situations where multiple instances of the API are running, Redis is used for distributed locking to ensure that only one instance can perform critical operations at a time. Will prevent race conditions and ensures data consistency.
 
-## 8. Client Error Handling
+## 9. Client Error Handling
 - **Client Errors**: All client-related errors (4xx status codes) are encapsulated in `pkg/model/errors.go` to standardize and simplify error handling. This approach ensures consistent error responses across the application.
 
-## 9. Encapsulating Response Writer
+## 10. Encapsulating Response Writer
 https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/server/server.go#L54
 - **Encapsulating Response Writer**: The response writer is encapsulated to provide more flexibility in how responses are sent. This allows for adding custom headers, logging response times, and performing additional checks or transformations before sending the response to the client.
 
-## 10. Migration and Seeding
+## 11. Migration and Seeding
 https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/model/db.go#L60
 https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/model/db.go#L77
 - **Migration and Seeding**: Initialize tables and initial data for testing.
