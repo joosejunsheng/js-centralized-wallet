@@ -26,6 +26,13 @@ docker-compose up --build -d
 **Endpoint:**  
 `POST http://localhost:8080/api/deposit/v1`
 
+```bash
+curl -X POST http://localhost:8080/api/deposit/v1 \
+  -H "Authorization: 1" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 67}'
+```
+
 **Headers:**
 ```
 Authorization: 1  // UserId
@@ -52,6 +59,13 @@ Authorization: 1  // UserId
 **Endpoint:**  
 `POST http://localhost:8080/api/withdraw/v1`
 
+```bash
+curl -X POST http://localhost:8080/api/withdraw/v1 \
+  -H "Authorization: 1" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 67}'
+```
+
 **Headers:**
 ```
 Authorization: 1  // UserId
@@ -74,6 +88,13 @@ Authorization: 1  // UserId
 ---
 
 ### 🔁 Transfer Money to Another User
+
+```bash
+curl -X POST http://localhost:8080/api/transfer/v2 \
+  -H "Authorization: 1" \
+  -H "Content-Type: application/json" \
+  -d '{"destination_user_id": 2, "amount": 1003}'
+```
 
 **Endpoint:**  
 `POST http://localhost:8080/api/transfer/v2`
@@ -102,6 +123,11 @@ Authorization: 1  // UserId
 
 ### 📊 Check Wallet Balance
 
+```bash
+curl -X GET http://localhost:8080/api/wallet/balance/v1 \
+  -H "Authorization: 1"
+```
+
 **Endpoint:**  
 `GET http://localhost:8080/api/wallet/balance/v1`
 
@@ -120,6 +146,11 @@ Authorization: 1  // UserId
 ---
 
 ### 📜 View Transaction History
+
+```bash
+curl -X GET "http://localhost:8080/api/transactions/v1?type=1&page=1&page_size=30" \
+  -H "Authorization: 2"
+```
 
 **Endpoint:**  
 `GET http://localhost:8080/api/transactions/v1`
@@ -150,12 +181,10 @@ GET http://localhost:8080/api/transactions/v1?type=1&page=1&page_size=30
 
 # Highlight How Should Review
 
+Listen then Serve instead of http.ListenAndServe, implements middleware, more customizable
+Uses ctx, lg := trace.Logger(ctx) whenever using log, to generate unique "trace path"
+
 Use gzip for compressed response, speed up response
-
-
-Added multiple workers for v2
-
-snowflake id for transaction uuid
 
 add indexing DestWalletId in Transaction for better history query
 
@@ -164,14 +193,45 @@ uses int64 for cents
 throttling (currently using window sliding, better to use token bucket, or window sliding comparing last and first time, more flexible)
 redis for distributed locking, multiple api instance checking same redis
 
-grpc to wallet service
 
 
 
-Caching Balance and Transaction History (Trade-off Between Performance and Consistency)
-When users are eager to check a transfer, they might spam to refresh their balance and transaction history. Throttling might not be the best way to block users off on reasonable request per second, so I've added a redis layer instead of letting the spam requests entering the postgres. 
-The most straightforward way of caching is when a request comes in, check if it exist in redis, if it doesn't, then we will write into the cache with expiry time (let's say 5 minutes) after retrieving it from database, so it will return data directly from the redis if it hasn't expired. But with this way, this might caused having stale data issue where users can only get the latest balance / history every 5 minutes. Certain events will update the balance / transaction history, so I decided to also work on the events on top of the previous cache implementation. 
-After writing to the database, I prefer to evict the corresponding cache instead of updating corresponding cache directly. This ensures the next read will fetch fresh data from the DB and repopulate the cache. Updating corresponding cache might be unnecessary since not all users check their transactions or balance after performing events like transfer, withdraw or deposit. And evicting cache only writes to redis when users actually need the data.
+## Caching Balance and Transaction History
+
+In order to handle users' requests to frequently check their balance and transaction history, especially during transfer events, I decided to implement a caching mechanism. This approach addresses the potential issue of excessive load on the PostgreSQL database caused by frequent requests while ensuring a balance between performance and consistency.
+
+### Caching Strategy
+
+Users might spam refresh requests to check their balance and transaction history. While throttling can limit the number of requests per second, it isn't always the best solution for blocking users who make reasonable requests. Instead, I've introduced a **Redis** layer to cache data and reduce the load on the database.
+
+### Cache Flow
+
+1. **Request Handling**:
+   - When a request comes in to fetch a user's balance or transaction history, the system first checks if the data exists in **Redis**.
+   
+2. **Cache Miss**:
+   - If the data is not found in the cache (a "cache miss"), we retrieve the data from the PostgreSQL database and write it into Redis with an expiry time (e.g., 5 minutes).
+
+3. **Cache Hit**:
+   - If the data is found in the cache (a "cache hit") and it hasn't expired, we return the data directly from Redis without querying the database, resulting in faster response times.
+
+### Trade-offs: Performance vs. Consistency
+
+While caching improves performance, it can introduce **stale data** issues. For example:
+- If the cache is set to expire every 5 minutes, users might not see the latest balance or transaction history until the cache is refreshed. This creates a trade-off between performance and data consistency.
+
+## Handling Events and Cache Invalidation
+
+Certain events, like **transfers**, **withdrawals**, or **deposits**, will update a user's balance or transaction history. To address this and ensure data consistency:
+
+- After writing the updated data to the database, we **evict the corresponding cache** entry rather than directly updating it. This ensures that the next read operation will fetch fresh data from the database and repopulate the cache.
+  
+- **Why Eviction Over Update?**
+  - Evicting the cache is preferred because not all users will immediately check their balance or transaction history after performing actions like transfers or deposits.
+  - Eviction ensures that Redis only stores fresh data when it's actually needed, avoiding unnecessary writes to Redis and preventing stale cache reads.
+
+By combining Redis caching with cache eviction after certain events, we achieve a good balance between performance (by reducing database load) and consistency (ensuring fresh data is fetched when necessary). This caching strategy ensures that the system can handle high traffic without sacrificing the accuracy of user data.
+
 
 ---
 
@@ -242,7 +302,7 @@ This version leverages a **job channel** to handle transfer requests asynchronou
 - **Message persistence**: Kafka messages are persistent and stored on disk.
 - **High availability**: Kafka replicates messages across multiple nodes for fault tolerance.
 - **Backpressure handling**: Kafka acts as a buffer to prevent overwhelming services, managing load spikes.
-- **At-least-once delivery**: Kafka guarantees at-least-once delivery of messages. You can use `snowflake_id` to prevent duplicate processing of messages.
+- **At-least-once delivery**: Kafka guarantees at-least-once delivery of messages. We can use `snowflake_id` to prevent duplicate processing of messages.
 
 ### 3. Create a Kafka Consumer like Transfer Service
 
@@ -263,7 +323,7 @@ This version leverages a **job channel** to handle transfer requests asynchronou
 
 ### 7. Implement Snowflake Id
 
-We are currently using an auto-increment integer for IDs. As the system scales to multiple servers or instances, we plan to implement the **Snowflake ID Generator**. This will provide globally unique identifiers with the following structure:
+I'm currently using an auto-increment integer for IDs. As the system scales to multiple servers or instances, I plan to implement the **Snowflake ID Generator**. This will provide globally unique identifiers with the following structure:
 
 #### Snowflake ID Structure:
 
@@ -287,7 +347,7 @@ We are currently using an auto-increment integer for IDs. As the system scales t
 ### How Long Spent on Tests
 
 - Spent approximately **2-3 hours** writing tests for the `/pkg/model` directory, achieving **50% test coverage**.
-- Didn't put more hours into it because I couldn't finish implementing all functions.
+- Didn't put more hours into it because couldn't finish implementing all functions.
 
 ### Test Coverage
 
