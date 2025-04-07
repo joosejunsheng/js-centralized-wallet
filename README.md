@@ -1,4 +1,4 @@
-
+# MIGRATION
 ---
 
 # Wallet API Documentation
@@ -178,22 +178,54 @@ GET http://localhost:8080/api/transactions/v1?type=1&page=1&page_size=30
 ```
 
 ---
+Here’s how you can write this into the README for better understanding:
 
-# Highlight How Should Review
+---
 
-Listen then Serve instead of http.ListenAndServe, implements middleware, more customizable
-Uses ctx, lg := trace.Logger(ctx) whenever using log, to generate unique "trace path"
+# Highlight how should reviewer view your code
 
-Use gzip for compressed response, speed up response
+## 1. Custom Middleware Implementation
+https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/server/server.go#L36
+- **Listen then Serve**: Instead of the standard `http.ListenAndServe`, custom middleware is used to intercept requests before serving. This approach gives more flexibility and control over request handling.
+- **Middleware**: Custom middleware is implemented to handle cross-cutting concerns like logging, authentication, and throttling.
+  
+## 2. Context-based Logging
+https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/trace/logger.go#L25
+- **Trace Logger**: Whenever logging is used, the context (`ctx`) is passed along with the log. This enables the generation of a unique trace path for each request, which is useful for tracing the execution flow across different microservices or components. The logger can be accessed using:
+  
+  ```go
+  ctx, lg := trace.Logger(ctx)
+  ```
 
-add indexing DestWalletId in Transaction for better history query
+## 3. Gzip Compression
+https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/utils/middlewares/gzip.go#L18
+- **Gzip for Response Compression**: To speed up response times and reduce bandwidth, gzip compression is enabled for responses. This reduces the payload size and improves performance, especially for large data sets.
 
-uses int64 for cents
+## 4. Transaction History Optimization
+- **Indexing**: The `DestWalletId` in the `Transaction` table is indexed to enhance the efficiency of querying wallet history. This improves the speed of transaction history lookups, especially when querying large volumes of transactions.
 
-throttling (currently using window sliding, better to use token bucket, or window sliding comparing last and first time, more flexible)
-redis for distributed locking, multiple api instance checking same redis
+## 5. Improved Currency Handling
+- **Using int64 for Cents**: Instead of using `float64`, `int64` is used for storing currency values in cents. This avoids rounding errors and provides more precise calculations, especially when dealing with large numbers of transactions.
 
+## 6. Throttling
+https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/utils/middlewares/throttle.go#L12
+- **Throttling Mechanism**: The system currently uses a sliding window for rate-limiting, but plans to migrate to a **Token Bucket** algorithm for better flexibility. This change will allow more dynamic and fine-grained control over request rates.
+- **Improved Throttling**: Future updates for current sliding window technique will compare the time between the last and first requests to better manage rate limiting and prevent overloads.
 
+## 7. Distributed Locking with Redis
+- **Redis for Distributed Locking**: In situations where multiple instances of the API are running, Redis is used for distributed locking to ensure that only one instance can perform critical operations at a time. Will prevent race conditions and ensures data consistency.
+
+## 8. Client Error Handling
+- **Client Errors**: All client-related errors (4xx status codes) are encapsulated in `pkg/model/errors.go` to standardize and simplify error handling. This approach ensures consistent error responses across the application.
+
+## 9. Encapsulating Response Writer
+https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/server/server.go#L54
+- **Encapsulating Response Writer**: The response writer is encapsulated to provide more flexibility in how responses are sent. This allows for adding custom headers, logging response times, and performing additional checks or transformations before sending the response to the client.
+
+## 10. Migration and Seeding
+https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/model/db.go#L60
+https://github.com/joosejunsheng/js-centralized-wallet/blob/6c15cd428ea510af32f3a4aa9c036e373d9d916f/pkg/model/db.go#L77
+- **Migration and Seeding**: Initialize tables and initial data for testing.
 
 
 ## Caching Balance and Transaction History
@@ -338,6 +370,15 @@ I'm currently using an auto-increment integer for IDs. As the system scales to m
 3. **Timestamp**: 
    - The current time (usually in milliseconds or microseconds) when the ID is created.
    - Ensures that IDs are ordered chronologically.
+
+### 8. Create a Cron Scheduler for Wallet Snapshot
+
+- **Cron Scheduler**: Implement a cron job that periodically takes snapshots of the wallet state. This helps to prevent data loss in case of unexpected failures and provides a way to monitor changes in wallet balances over time.
+  
+#### Snapshot Strategy:
+- **Scheduled Snapshotting**: Set up a cron job to run at regular intervals (e.g., hourly or daily) that captures the state of all user wallets, including balances, transaction history, and other relevant data.
+- **Database Storage**: Store these snapshots in a separate table or database, preserving historical wallet data for audit purposes.
+- **Snapshot Integrity Check**: Before each snapshot, ensure the integrity of the data by running a verification process to ensure no corrupt or missing data in the wallet state.
 
 
 ---
