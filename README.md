@@ -182,7 +182,7 @@ Here’s how you can write this into the README for better understanding:
 # Highlight how should reviewer view your code
 
 ## 1. Deadlock Prevention
-https://github.com/joosejunsheng/js-centralized-wallet/blob/c555ba9eaaff8a8489c517c6407d06987504df31/pkg/model/transaction.go#L230
+https://github.com/joosejunsheng/js-centralized-wallet/blob/bdba4b3d8264bcaf1ce83bd7ea394342fc0288f2/pkg/model/transaction.go#L230
 - **Prevention of Deadlock**: It compares the `sourceUserId` and `destUserId` to ensure that the smaller user ID is locked first. This is a common practice to avoid circular locking, which can lead to deadlock situations.
 
 ## 2. Custom Middleware Implementation
