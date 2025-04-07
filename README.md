@@ -151,10 +151,7 @@ GET http://localhost:8080/api/transactions/v1?type=1&page=1&page_size=30
 Let me know if you want to add OpenAPI (Swagger) support or diagrams for flow!
 
 # Explain Decisions Made
-# Installation
 # Highlight How Should Review
-# Areas to be Improved
-# How Long Spent on Test
 # Which Features Chose Not To Do in Submission
 
 Use gzip for compressed response, speed up response
@@ -241,12 +238,12 @@ This version leverages a **job channel** to handle transfer requests asynchronou
 
 ---
 
-## Other Solutions to Explore
+## Areas to Improve
 
 ### 1. Decouple Wallet into Microservice
 
 - **Create a dedicated wallet service**: Separating the wallet functionality into a standalone microservice enhances scalability and allows for independent scaling of the wallet system.
-  
+
 ### 2. Introduce gRPC API Gateway with Kafka Integration
 
 - **gRPC API Gateway**: Expose gRPC endpoints via a **.proto** file to handle transfer requests.
@@ -262,18 +259,42 @@ This version leverages a **job channel** to handle transfer requests asynchronou
 
 - Implement a Kafka consumer that listens to transfer requests from the Kafka topic.
 - Consumers (workers) process transfer jobs independently, ensuring parallel processing and scalability.
-  
+
 ### 4. Add Retry Mechanism
 
 - **Retry Mechanism**: If a transfer fails, push the job to a **retry topic** for reprocessing or a **Dead Letter Queue (DLQ)** for future inspection.
-  
+
 ### 5. Implement Log Monitoring Service
 
 - **Centralized logging**: Use a tool like **Grafana** to centralize logs and monitor key metrics such as CPU usage, memory usage, and response times across services.
 
+### 6. Graceful Shutdown
 
-Add gracefully shutdown
-if not process exits halfway, database, inconsistency
+- Implement **graceful shutdown** to ensure that the service can clean up resources properly (e.g., closing open database connections, stopping the worker pool) and avoid inconsistencies, especially in cases where the process exits halfway during a transfer.
 
+---
 
-Coverage
+## Testing
+
+### How Long Spent on Tests
+
+- Spent approximately **2-3 hours** writing tests for the `/pkg/model` directory, achieving **50% test coverage**.
+- Didn't put more hours into it because I couldn't finish implementing all functions.
+
+### Test Coverage
+
+- The following test files were created:
+
+```bash
+go test -cover ./...
+```
+
+Test files:
+- `/pkg/model/wallet_test.go`
+- `/pkg/model/worker_test.go`
+- `/pkg/utils/middlewares_test/throttle_test.go`
+- `/pkg/model/transaction_test.go`
+
+### Coverage
+
+- **Total coverage**: 50% for the `/pkg/model` directory.
