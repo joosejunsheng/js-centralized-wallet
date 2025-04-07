@@ -148,25 +148,10 @@ GET http://localhost:8080/api/transactions/v1?type=1&page=1&page_size=30
 
 ---
 
-Let me know if you want to add OpenAPI (Swagger) support or diagrams for flow!
-
-# Explain Decisions Made
 # Highlight How Should Review
-# Which Features Chose Not To Do in Submission
 
 Use gzip for compressed response, speed up response
 
-a
-# TODO:
-# 1. add indexing 
-
-# TODO:
-# 1. trace
-
-Build Command
-docker-compose up --build -d
-docker volume prune -a
-docker image prune -a
 
 Added multiple workers for v2
 
@@ -203,6 +188,8 @@ The core transfer functionality involves four main steps:
 
 ## Version 1: Synchronous Transaction (Implemented)
 
+http://localhost:8080/api/transfer/v1
+
 ### How it Works
 
 In this version, all four steps are wrapped in a **single database transaction**:
@@ -219,7 +206,9 @@ In this version, all four steps are wrapped in a **single database transaction**
 
 ---
 
-## Version 2: Asynchronous Transfer (Implemented, Retry Not Handled)
+## Version 2: Asynchronous Transfer With Worker Pool (Implemented, Retry Not Handled)
+
+http://localhost:8080/api/transfer/v2
 
 ### How it Works
 
@@ -271,6 +260,25 @@ This version leverages a **job channel** to handle transfer requests asynchronou
 ### 6. Graceful Shutdown
 
 - Implement **graceful shutdown** to ensure that the service can clean up resources properly (e.g., closing open database connections, stopping the worker pool) and avoid inconsistencies, especially in cases where the process exits halfway during a transfer.
+
+### 7. Implement Snowflake Id
+
+We are currently using an auto-increment integer for IDs. As the system scales to multiple servers or instances, we plan to implement the **Snowflake ID Generator**. This will provide globally unique identifiers with the following structure:
+
+#### Snowflake ID Structure:
+
+1. **Machine ID**: 
+   - Identifies the machine or instance generating the ID.
+   - Useful for distributed systems and ensuring unique ID generation across multiple machines.
+
+2. **Sequence**: 
+   - A counter that increments for each new ID generated within the same millisecond.
+   - Prevents ID collisions when generating multiple IDs per millisecond.
+
+3. **Timestamp**: 
+   - The current time (usually in milliseconds or microseconds) when the ID is created.
+   - Ensures that IDs are ordered chronologically.
+
 
 ---
 
