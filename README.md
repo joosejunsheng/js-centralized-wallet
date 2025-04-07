@@ -1,6 +1,3 @@
-# MIGRATION
----
-
 # Wallet API Documentation
 
 ### 🚀 Build and Run
