@@ -59,13 +59,6 @@ func (m *Model) GetTransactionHistory(ctx context.Context, userId uint64, transc
 		return transactions, err
 	}
 
-	// query := m.db.Table("transactions").
-	// 	Select(`transactions.*,
-	//             u.email AS user_email`).
-	// 	Joins(`JOIN wallets AS w ON transactions.source_wallet_id = w.id`).
-	// 	Joins(`JOIN users AS u ON w.user_id = u.id`).
-	// 	Where("transactions.dest_wallet_id = ?", walletId)
-
 	query := m.db.Where("dest_wallet_id = ?", walletId)
 
 	if transctionType > 0 && transctionType <= 3 {
@@ -173,7 +166,7 @@ func (m *Model) TransferBalance(ctx context.Context, sourceUserId, destUserId ui
 	lg.Info(fmt.Sprintf("Starts transferring $%d from user_id %d to user_id %d", amount, sourceUserId, destUserId))
 
 	// Simulate slow process / delay
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 	err := m.db.Transaction(func(tx *gorm.DB) error {
 
 		// Lock wallets
@@ -188,7 +181,7 @@ func (m *Model) TransferBalance(ctx context.Context, sourceUserId, destUserId ui
 			// TODO:
 			// 1) Add retry mechanism in the future
 			// OR
-			// 2) Push into persistent storage to notify users
+			// 2) Push into persistent storage to notify users that the transaction fails
 			return ErrBalanceInsufficient
 		}
 		sourceWallet.Balance -= amount

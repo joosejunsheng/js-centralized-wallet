@@ -41,7 +41,8 @@ func (s *Server) Run() error {
 	return http.Serve(l, middlewares.ComposeMiddlewares(
 		middlewares.AccessLog,
 		middlewares.AllowAllOrigins,
-		middlewares.ComposeMiddlewares(middlewares.GzipMiddleware, s.apiRoutes),
+		middlewares.GzipMiddleware,
+		s.apiRoutes,
 	)(http.NewServeMux().ServeHTTP))
 }
 

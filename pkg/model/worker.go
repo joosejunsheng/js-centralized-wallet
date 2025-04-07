@@ -14,14 +14,14 @@ type TransferJob struct {
 }
 
 type TransferWorkerPool struct {
-	model      *Model
+	model      TransferService
 	jobChan    <-chan TransferJob
 	numWorkers int
 }
 
 type TransferWorkerOption func(*TransferWorkerPool)
 
-func NewTransferWorkerPool(model *Model, jobChan <-chan TransferJob, opts ...TransferWorkerOption) *TransferWorkerPool {
+func NewTransferWorkerPool(model TransferService, jobChan <-chan TransferJob, opts ...TransferWorkerOption) *TransferWorkerPool {
 	pool := &TransferWorkerPool{
 		model:      model,
 		jobChan:    jobChan,
@@ -51,7 +51,7 @@ func (p *TransferWorkerPool) Start() {
 					// TODO:
 					// 1) Add retry mechanism in the future
 					// OR
-					// 2) Push into persistent storage to notify users
+					// 2) Push into persistent storage to notify users that the transaction fails
 					lg.Info(fmt.Sprintf("[worker %d] transfer failed - FROM USER %d TO USER %d, AMOUNT %d ERR: %v", id, job.SourceUserId, job.DestUserId, job.Amount, err))
 				} else {
 					p.model.InvalidateWalletCache(job.Ctx, job.SourceUserId, job.DestUserId)

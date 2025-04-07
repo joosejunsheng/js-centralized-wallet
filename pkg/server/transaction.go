@@ -133,7 +133,7 @@ func (s *Server) getTransactionHistory(w http.ResponseWriter, r *http.Request) {
 
 	redisData, err := json.Marshal(resp)
 	if err != nil {
-		lg.Error("failed to marshal resp into redis:", err)
+		lg.Error("failed to marshal resp into redis", "error", err)
 	} else {
 		_ = redis.Set(ctx, transactionHistoryKey, redisData, 5*time.Minute).Err()
 	}

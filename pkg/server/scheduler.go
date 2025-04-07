@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
-	"js-centralized-wallet/pkg/trace"
+	"log/slog"
 	"time"
 
 	"github.com/robfig/cron/v3"
@@ -11,7 +11,6 @@ import (
 
 func (s *Server) StartScheduler() error {
 	c := cron.New()
-	_, lg := trace.Logger(context.Background())
 
 	// Run at every minute
 	_, err := c.AddFunc("0 0 * * *", func() {
@@ -20,7 +19,7 @@ func (s *Server) StartScheduler() error {
 
 		err := s.model.SyncWalletSnapshots(ctx)
 		if err != nil {
-			lg.Error(fmt.Sprintf("failed to take wallet snapshot: %ww", err))
+			slog.Error(fmt.Sprintf("failed to take wallet snapshot: %v", err))
 		}
 	})
 

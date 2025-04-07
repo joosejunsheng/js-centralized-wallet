@@ -12,6 +12,11 @@ type Wallet struct {
 	Balance int64  `json:"balance"`
 }
 
+type TransferService interface {
+	TransferBalance(ctx context.Context, source, dest uint64, amount int64) error
+	InvalidateWalletCache(ctx context.Context, userIds ...uint64)
+}
+
 func (*Wallet) TableName() string {
 	return "wallets"
 }
