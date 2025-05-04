@@ -10,11 +10,14 @@ import (
 	"net"
 	"net/http"
 	"os"
+
+	"github.com/IBM/sarama"
 )
 
 type Server struct {
-	model   *model.Model
-	jobChan chan model.TransferJob
+	model         *model.Model
+	jobChan       chan model.TransferJob
+	KafkaProducer sarama.AsyncProducer
 }
 
 func NewServer(m *model.Model) *Server {

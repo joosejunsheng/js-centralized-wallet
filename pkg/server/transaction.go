@@ -245,11 +245,17 @@ func (s *Server) transferBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.model.TransferBalance(transferBalanceCtx, userId, req.DestinationUserId, req.Amount)
+	err = s.model.TransferBalanceRedisWithRetry(transferBalanceCtx, s.model.GetRedis(), s.KafkaProducer, userId, req.DestinationUserId, req.Amount, 5)
 	if err != nil {
 		respondErr(w, r, err)
 		return
 	}
+
+	// err = s.model.TransferBalance(transferBalanceCtx, userId, req.DestinationUserId, req.Amount)
+	// if err != nil {
+	// 	respondErr(w, r, err)
+	// 	return
+	// }
 
 	s.model.InvalidateWalletCache(transferBalanceCtx, userId, req.DestinationUserId)
 

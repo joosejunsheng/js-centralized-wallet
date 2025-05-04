@@ -30,6 +30,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	err = server.StartKafkaProducer()
+	if err != nil {
+		slog.Error("failed to start kafka producer", "err", err)
+		os.Exit(1)
+	}
+
 	err = server.Run()
 	if err != nil {
 		slog.Error("failed to run server", "err", err)

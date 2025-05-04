@@ -20,6 +20,7 @@ services:
     depends_on:
       - db
       - redis
+      - kafka
     environment:
       LISTEN_ADDR: :8080
       POSTGRES_USER: admin
@@ -28,6 +29,7 @@ services:
       POSTGRES_DB: mydb
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      KAFKA_BROKER: kafka:9092
     ports:
       - "8080:8080"
     entrypoint: ["/entrypoint.sh"]
@@ -39,6 +41,24 @@ services:
     restart: always
     ports:
       - "6379:6379"
+
+  kafka:
+    image: wurstmeister/kafka:latest
+    container_name: js-centralized-wallet-kafka
+    restart: always
+    environment:
+      KAFKA_ADVERTISED_LISTENER: kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL: PLAINTEXT
+      KAFKA_LISTENER_INTERNAL: 0.0.0.0:9092
+      KAFKA_LISTENER_EXTERNAL: kafka:9092
+      KAFKA_LISTENER_PORT: 9092
+      KAFKA_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENER_INTER_BROKER_SECURITY_PROTOCOL: PLAINTEXT
+      KAFKA_MODE: kraft
+      KAFKA_KRAFT_MODE: "true"
+      KAFKA_CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
+    ports:
+      - "9092:9092"
 
 volumes:
   pg_data:

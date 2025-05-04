@@ -2,7 +2,6 @@ package utils
 
 import (
 	"net/url"
-	"os"
 	"strconv"
 )
 
@@ -27,12 +26,4 @@ func GetQueryInt(q url.Values, key string, defaultValue int) int {
 	}
 
 	return intValue
-}
-
-func MustReadLua(path string) string {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	return string(b)
 }

@@ -2,11 +2,13 @@ package model
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"js-centralized-wallet/pkg/trace"
-	"js-centralized-wallet/pkg/utils"
+	"os"
 	"time"
 
+	"github.com/IBM/sarama"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -162,10 +164,10 @@ func (m *Model) Withdraw(ctx context.Context, userId uint64, amount int64) (int6
 
 	return userWallet.Balance, err
 }
-func (m *Model) TransferBalanceRedisWithRetry(ctx context.Context, rdb *redis.Client, sourceUserId, destUserId uint64, amount int64, maxRetries int) error {
+func (m *Model) TransferBalanceRedisWithRetry(ctx context.Context, rdb *redis.Client, kafkaProducer sarama.AsyncProducer, sourceUserId, destUserId uint64, amount int64, maxRetries int) error {
 	ctx, lg := trace.Logger(ctx)
 
-	luaTransferBalance := utils.MustReadLua("scripts/transfer_balance.lua")
+	luaTransferBalance := mustReadLua("scripts/transfer_balance.lua")
 
 	sourceBalanceKey := fmt.Sprintf("balance:%d", sourceUserId)
 	sourceVersionKey := fmt.Sprintf("balance_version:%d", sourceUserId)
@@ -205,6 +207,24 @@ func (m *Model) TransferBalanceRedisWithRetry(ctx context.Context, rdb *redis.Cl
 			default:
 				return fmt.Errorf("unexpected Lua error: %w", err)
 			}
+		}
+
+		walEntry := &KafkaWALMessage{
+			TransactionUUID: uuid.New().String(),
+			SourceUserId:    sourceUserId,
+			DestUserId:      destUserId,
+			Amount:          amount,
+		}
+
+		msgBytes, err := json.Marshal(walEntry)
+		if err != nil {
+			return fmt.Errorf("failed to marshal WAL entry: %w", err)
+		}
+
+		err = m.sendToKafka(ctx, kafkaProducer, msgBytes)
+		if err != nil {
+			// Retry mechanism or compensating logic can go here
+			return fmt.Errorf("failed to send WAL to Kafka: %w", err)
 		}
 
 		lg.Info(fmt.Sprintf("Transfer successful on attempt %d", retry+1), zap.Any("result", res))
@@ -301,4 +321,12 @@ func LockWalletsBalanceByUserId(c context.Context, sourceUserId, destUserId uint
 		}
 	}
 	return sourceWallet, destWallet, nil
+}
+
+func mustReadLua(path string) string {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
 }
