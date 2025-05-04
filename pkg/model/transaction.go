@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"js-centralized-wallet/pkg/trace"
+	"js-centralized-wallet/pkg/utils"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -159,14 +162,63 @@ func (m *Model) Withdraw(ctx context.Context, userId uint64, amount int64) (int6
 
 	return userWallet.Balance, err
 }
+func (m *Model) TransferBalanceRedisWithRetry(ctx context.Context, rdb *redis.Client, sourceUserId, destUserId uint64, amount int64, maxRetries int) error {
+	ctx, lg := trace.Logger(ctx)
+
+	luaTransferBalance := utils.MustReadLua("scripts/transfer_balance.lua")
+
+	sourceBalanceKey := fmt.Sprintf("balance:%d", sourceUserId)
+	sourceVersionKey := fmt.Sprintf("balance_version:%d", sourceUserId)
+	destBalanceKey := fmt.Sprintf("balance:%d", destUserId)
+	destVersionKey := fmt.Sprintf("balance_version:%d", destUserId)
+
+	for retry := 0; retry < maxRetries; retry++ {
+		sourceVals, err := rdb.MGet(ctx, sourceBalanceKey, sourceVersionKey).Result()
+		if err != nil || sourceVals[0] == nil || sourceVals[1] == nil {
+			return fmt.Errorf("source user missing: %w", err)
+		}
+
+		destVals, err := rdb.MGet(ctx, destBalanceKey, destVersionKey).Result()
+		if err != nil || destVals[0] == nil || destVals[1] == nil {
+			return fmt.Errorf("destination user missing: %w", err)
+		}
+
+		sourceVersion := sourceVals[1].(string)
+		destVersion := destVals[1].(string)
+
+		res, err := rdb.Eval(ctx, luaTransferBalance, []string{
+			sourceBalanceKey,
+			sourceVersionKey,
+			destBalanceKey,
+			destVersionKey,
+		}, amount, sourceVersion, destVersion).Result()
+
+		if err != nil {
+			switch err.Error() {
+			case "VERSION_MISMATCH":
+				time.Sleep(10 * time.Millisecond)
+				continue
+			case "INSUFFICIENT_FUNDS":
+				return fmt.Errorf("transfer failed: insufficient funds")
+			case "MISSING_KEY":
+				return fmt.Errorf("transfer failed: key not found")
+			default:
+				return fmt.Errorf("unexpected Lua error: %w", err)
+			}
+		}
+
+		lg.Info(fmt.Sprintf("Transfer successful on attempt %d", retry+1), zap.Any("result", res))
+		return nil
+	}
+
+	return fmt.Errorf("transfer failed after %d retries", maxRetries)
+}
 
 func (m *Model) TransferBalance(ctx context.Context, sourceUserId, destUserId uint64, amount int64) error {
 	ctx, lg := trace.Logger(ctx)
 
 	lg.Info(fmt.Sprintf("Starts transferring $%d from user_id %d to user_id %d", amount, sourceUserId, destUserId))
 
-	// Simulate slow process / delay
-	time.Sleep(1 * time.Second)
 	err := m.db.Transaction(func(tx *gorm.DB) error {
 
 		// Lock wallets
